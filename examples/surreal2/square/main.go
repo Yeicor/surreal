@@ -18,9 +18,6 @@ func main() {
 	startTime := time.Now()
 	lines := surreal2.NewSimple(math.Pi/4, 0.1, sdf.V2i{1, 1}).Run(s)
 	log.Println("Generated", len(lines), "output lines in", time.Since(startTime))
-	if len(lines) != 4 {
-		panic("Squares (low enough step and minAngle) are expected to render using only 4 lines")
-	}
 
 	// Save boilerplate
 	svg := render.NewSVG("render.svg", "fill:none;stroke:black;stroke-width:0.1")
@@ -31,5 +28,9 @@ func main() {
 	err := svg.Save()
 	if err != nil {
 		panic(err)
+	}
+
+	if len(lines) != 4 {
+		panic("Squares (low enough step and minAngle) are expected to render using only 4 lines")
 	}
 }

@@ -25,7 +25,7 @@ func main() {
 	startTime := time.Now()
 	lines := surreal2.NewDefault().Run(s)
 	log.Println("Generated", len(lines), "output lines in", time.Since(startTime))
-	// 17 closed surfaces generate 821 lines with default settings at 11/01/2022 (sensible to small parameter changes and randomness source)
+	// 17 closed surfaces generate 814 lines with default settings at 11/01/2022 (sensible to small parameter and source changes)
 
 	// Save boilerplate
 	svg := render.NewSVG("render.svg", "fill:none;stroke:black;stroke-width:0.1")

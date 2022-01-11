@@ -1,7 +1,6 @@
 package surreal2
 
 import (
-	"github.com/deadsy/sdfx/render"
 	"github.com/deadsy/sdfx/sdf"
 	"github.com/dhconnelly/rtreego"
 	"math"
@@ -21,15 +20,15 @@ func findNearest(rtreeLines *rtreego.Rtree, newPos sdf.V2, numNeighbors int) (sd
 	var nearestLine *line
 	for _, nearest := range allNearest {
 		nearestLine = nearest.(*line)
-		closestVert = nearestLine.Line[0]
-		if closestVert == newPos {
-			continue
-		}
-		closestVertDistSq = nearestLine.Line[0].Sub(newPos).Length2()
-		closestVertDistSq2 := nearestLine.Line[1].Sub(newPos).Length2()
+		closestVert = nearestLine.vertices[0]
+		//if closestVert == newPos {
+		//	continue
+		//}
+		closestVertDistSq = nearestLine.vertices[0].Sub(newPos).Length2()
+		closestVertDistSq2 := nearestLine.vertices[1].Sub(newPos).Length2()
 		if closestVertDistSq2 < closestVertDistSq {
 			closestVertDistSq = closestVertDistSq2
-			closestVert = nearestLine.Line[1]
+			closestVert = nearestLine.vertices[1]
 		}
 	}
 	return closestVert, closestVertDistSq, nearestLine
@@ -47,12 +46,12 @@ func rectContainsPoint(r *rtreego.Rect, p sdf.V2, eps float64) bool {
 }
 
 type line struct {
-	*render.Line
+	vertices [2]sdf.V2
 }
 
 func (p *line) Bounds() *rtreego.Rect {
-	p1 := rtreego.Point{p.Line[0].X, p.Line[0].Y}
-	p2 := rtreego.Point{p.Line[1].X, p.Line[1].Y}
+	p1 := rtreego.Point{p.vertices[0].X, p.vertices[0].Y}
+	p2 := rtreego.Point{p.vertices[1].X, p.vertices[1].Y}
 	rect, _ := rtreego.NewRectFromPoints(p1, p2)
 	return rect
 }

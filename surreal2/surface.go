@@ -21,23 +21,18 @@ func fallToSurface(s sdf.SDF2, from sdf.V2, hitEps, normalEps, stepSize float64,
 			return &from
 		}
 		normal := sdf.Normal2(s, from, normalEps)
-		normal = normalHandleNaNs(normal, rng, normalEps)
+		normal = normalHandleNaNs(normal, rng)
 		//log.Println("[fallToSurface] from", from, "normal", normal, "val", val, -val*stepSize)
 		from = from.Add(normal.MulScalar(-val * stepSize))
 	}
 	return nil // Not found
 }
 
-func normalHandleNaNs(normal sdf.V2, rng *rand.Rand, normalEps float64) sdf.V2 {
-	if math.IsNaN(normal.X) && math.IsNaN(normal.Y) { // Decide randomly when the normal can't move us
-		normal.X = rng.Float64()*normalEps - normalEps/2
-		normal.Y = rng.Float64()*normalEps - normalEps/2
-	} else if math.IsNaN(normal.X) {
-		normal.X = 0
-		normal.Y = sign(normal.Y)
-	} else if math.IsNaN(normal.Y) {
-		normal.X = sign(normal.X)
-		normal.Y = 0
+func normalHandleNaNs(normal sdf.V2, rng *rand.Rand) sdf.V2 {
+	if math.IsNaN(normal.X) || math.IsNaN(normal.Y) { // Decide randomly when the normal can't move us
+		normal.X = rng.Float64() - 0.5
+		normal.Y = rng.Float64() - 0.5
+		normal = normal.Normalize()
 	}
 	return normal
 }
