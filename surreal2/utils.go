@@ -6,13 +6,6 @@ import (
 	"math"
 )
 
-func sign(v float64) float64 {
-	if v >= 0 {
-		return 1
-	}
-	return -1
-}
-
 func findNearest(rtreeLines *rtreego.Rtree, newPos sdf.V2, numNeighbors int) (sdf.V2, float64, *line) {
 	allNearest := rtreeLines.NearestNeighbors(numNeighbors, rtreego.Point{newPos.X, newPos.Y})
 	closestVertDistSq := math.MaxFloat64
@@ -21,9 +14,6 @@ func findNearest(rtreeLines *rtreego.Rtree, newPos sdf.V2, numNeighbors int) (sd
 	for _, nearest := range allNearest {
 		nearestLine = nearest.(*line)
 		closestVert = nearestLine.vertices[0]
-		//if closestVert == newPos {
-		//	continue
-		//}
 		closestVertDistSq = nearestLine.vertices[0].Sub(newPos).Length2()
 		closestVertDistSq2 := nearestLine.vertices[1].Sub(newPos).Length2()
 		if closestVertDistSq2 < closestVertDistSq {
@@ -32,17 +22,6 @@ func findNearest(rtreeLines *rtreego.Rtree, newPos sdf.V2, numNeighbors int) (sd
 		}
 	}
 	return closestVert, closestVertDistSq, nearestLine
-}
-
-// containsPoint tests whether p is located inside or on the boundary of r.
-func rectContainsPoint(r *rtreego.Rect, p sdf.V2, eps float64) bool {
-	if p.X+eps < r.PointCoord(0) || p.X-eps > r.PointCoord(0)+r.LengthsCoord(0) {
-		return false
-	}
-	if p.Y+eps < r.PointCoord(1) || p.Y-eps > r.PointCoord(1)+r.LengthsCoord(1) {
-		return false
-	}
-	return true
 }
 
 type line struct {

@@ -15,7 +15,6 @@ import (
 //  - step is the distance between surface checks and is useful for avoiding skipping small features that return
 //    to the original tangent. Keep it as close to 0, as possible (as long as performance is good enough).
 //  - normalEps should generally be as close to 0 as possible (considering numerical inaccuracies).
-//  - rectEps should generally be as close to 0 as possible (usually greater than normalEps).
 //  - scanSurfaceCells is required when there are multiple surfaces, as the algorithm needs to find each one of them to
 //    properly generate them.
 //  - scanSurfaceDistSq is the minimum distance between surfaces to consider them as different (keep as high as your
@@ -23,12 +22,12 @@ import (
 //  - surf* see fallToSurface.
 //  - rng is only used for fallToSurface (to solve 0 gradient by pushing in a random direction).
 type Algorithm struct {
-	minAngle, step, normalEps, rectEps float64
-	scanSurfaceCells                   sdf.V2i
-	scanSurfaceDistSq                  float64
-	surfHitEps, surfStepSize           float64
-	surfMaxSteps                       int
-	rng                                *rand.Rand
+	minAngle, step, normalEps float64
+	scanSurfaceCells          sdf.V2i
+	scanSurfaceDistSq         float64
+	surfHitEps, surfStepSize  float64
+	surfMaxSteps              int
+	rng                       *rand.Rand
 }
 
 // NewDefault values may change at any time. See NewSimple.
@@ -41,17 +40,16 @@ func NewDefault() *Algorithm {
 
 // NewSimple values may change at any time. See New.
 func NewSimple(minAngle, step float64, scanSurfaceCells sdf.V2i) *Algorithm {
-	return New(minAngle, step, 1e-12, 1e-4, scanSurfaceCells, 0.1, 1e-12,
+	return New(minAngle, step, 1e-12, scanSurfaceCells, 0.1, 1e-12,
 		1, 100, rand.NewSource(0))
 }
 
 // New see Algorithm.
-func New(minAngle float64, step float64, normalEps, rectEps float64, scanSurfaceCells sdf.V2i, scanSurfaceDistSq, surfHitEps float64, surfStepSize float64, surfMaxSteps int, randSource rand.Source) *Algorithm {
+func New(minAngle float64, step float64, normalEps float64, scanSurfaceCells sdf.V2i, scanSurfaceDistSq, surfHitEps float64, surfStepSize float64, surfMaxSteps int, randSource rand.Source) *Algorithm {
 	return &Algorithm{
 		minAngle:          minAngle,
 		step:              step,
 		normalEps:         normalEps,
-		rectEps:           rectEps,
 		scanSurfaceCells:  scanSurfaceCells,
 		scanSurfaceDistSq: scanSurfaceDistSq,
 		surfHitEps:        surfHitEps,
@@ -89,9 +87,8 @@ func (a *Algorithm) Run(s sdf.SDF2) [][2]sdf.V2 {
 			// Move this point to an "edge" (optional, may reduce the number of lines by 1 and avoid intersections)
 			firstPoint = a.walkAlongSurface(s, &toProcess{firstPoint, true}, nil, nil)
 			// If the found point is not on any previously generated surface...
-			_, closestVertDistSq, nearestLine := findNearest(allLinesRtree, firstPoint, 2 /* TODO: more? */)
-			if closestVertDistSq == math.MaxFloat64 ||
-				!rectContainsPoint(nearestLine.Bounds(), firstPoint, a.rectEps) && closestVertDistSq > a.scanSurfaceDistSq {
+			_, closestVertDistSq, _ := findNearest(allLinesRtree, firstPoint, 2 /* TODO: more? */)
+			if closestVertDistSq == math.MaxFloat64 || closestVertDistSq > a.scanSurfaceDistSq {
 				// Build the new surface
 				//log.Println("[SURREAL2] Generating surface at", cellIndex, ">", firstPoint, "with closest", closestVertDistSq)
 				surface, subRtree := a.buildSingleSurface(s, firstPoint)

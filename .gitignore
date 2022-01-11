@@ -1,5 +1,6 @@
 # Temporary render files
-/examples/**/render.svg
+/examples/surreal2/**/render.svg
+/examples/surreal3/**/render.stl
 
 # IDE files
 /surreal.iml
