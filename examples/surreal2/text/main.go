@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/Yeicor/surreal/surreal2"
 	"github.com/deadsy/sdfx/render"
 	"github.com/deadsy/sdfx/sdf"
-	"iso-planar-gen/sdf2"
 	"log"
 	"time"
 )
@@ -23,11 +23,12 @@ func main() {
 	}
 
 	startTime := time.Now()
-	lines := sdf2.NewIsoPlanarGen2Default().Run(s)
+	lines := surreal2.NewDefault().Run(s)
 	log.Println("Generated", len(lines), "output lines in", time.Since(startTime))
+	// 17 closed surfaces generate 821 lines with default settings at 11/01/2022 (sensible to small parameter changes and randomness source)
 
 	// Save boilerplate
-	svg := render.NewSVG("output.svg", "fill:none;stroke:black;stroke-width:0.1")
+	svg := render.NewSVG("render.svg", "fill:none;stroke:black;stroke-width:0.1")
 	for _, line := range lines {
 		//log.Println("Output line:", line)
 		svg.Line(line[0], line[1])

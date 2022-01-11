@@ -1,4 +1,4 @@
-package sdf2
+package surreal2
 
 import (
 	"github.com/deadsy/sdfx/render"
@@ -8,7 +8,7 @@ import (
 	"math"
 )
 
-func (a *IsoPlanarGen2) buildSingleSurface(s sdf.SDF2, firstPoint sdf.V2) ([]*render.Line, *rtreego.Rtree) {
+func (a *Algorithm) buildSingleSurface(s sdf.SDF2, firstPoint sdf.V2) ([]*render.Line, *rtreego.Rtree) {
 	var res []*render.Line
 	rtreeLines := rtreego.NewTree(2, 3, 5)
 	remaining := []*toProcess{{firstPoint, false}}
@@ -24,7 +24,7 @@ func (a *IsoPlanarGen2) buildSingleSurface(s sdf.SDF2, firstPoint sdf.V2) ([]*re
 	return res, rtreeLines
 }
 
-func (a *IsoPlanarGen2) runIter(s sdf.SDF2, start *toProcess, remaining *[]*toProcess, rtreeLines *rtreego.Rtree) *render.Line {
+func (a *Algorithm) runIter(s sdf.SDF2, start *toProcess, remaining *[]*toProcess, rtreeLines *rtreego.Rtree) *render.Line {
 	startNormal := sdf.Normal2(s, start.point, a.normalEps)
 	startTangent := tangentForNormal(startNormal, start.dir)
 	newPos := start.point
@@ -34,9 +34,9 @@ func (a *IsoPlanarGen2) runIter(s sdf.SDF2, start *toProcess, remaining *[]*toPr
 		// Move by step to check if we are still good at the new point
 		// TODO: Is it ok to fall outside the bounding box to continue the surface?
 		newPos = newPos.Add(startTangent.MulScalar(a.step))
-		newPosInSurface := fallToSurface(s, newPos, a.surfHitEps, a.normalEps, a.surfStepSize, a.surfMaxSteps)
+		newPosInSurface := fallToSurface(s, newPos, a.surfHitEps, a.normalEps, a.surfStepSize, a.surfMaxSteps, a.rng)
 		if newPosInSurface == nil {
-			log.Println("[IsoPlanarGen2] WARNING: Surface not found (while walking along tangent)")
+			log.Println("[SURREAL2] WARNING: Surface not found (while walking along tangent)")
 			return nil
 		}
 		newPos = *newPosInSurface
@@ -50,7 +50,7 @@ func (a *IsoPlanarGen2) runIter(s sdf.SDF2, start *toProcess, remaining *[]*toPr
 			// This other "hack" triggered when pos does not move as it falls back to the same position over and over
 			// (in this case we need a change of direction, as this is a very sharp corner)
 			sharpAngle = prevPos.Sub(newPos).Length2() < a.step*a.step/1000
-			//log.Println("[IsoPlanarGen2] WARNING: Stuck triggered (while walking along tangent)")
+			//log.Println("[SURREAL2] WARNING: Stuck triggered (while walking along tangent)")
 		}
 		angle := math.Acos(startNormal.Dot(newNormal))
 		//log.Println("newPos:", newPos, "Normals:", startNormal, newNormal, "Angle:", angle, ">=?", a.minAngle)

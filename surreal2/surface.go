@@ -1,4 +1,4 @@
-package sdf2
+package surreal2
 
 import (
 	"github.com/deadsy/sdfx/sdf"
@@ -13,7 +13,7 @@ import (
 // - normalEps should generally be as close to 0 as possible (considering numerical inaccuracies)
 // - stepSize indicates how much to move on each step (should be in (0, 1])
 // - maxSteps sets a limit to the number of steps (will fail if this number is reached)
-func fallToSurface(s sdf.SDF2, from sdf.V2, hitEps, normalEps, stepSize float64, maxSteps int) *sdf.V2 {
+func fallToSurface(s sdf.SDF2, from sdf.V2, hitEps, normalEps, stepSize float64, maxSteps int, rng *rand.Rand) *sdf.V2 {
 	for step := 0; step < maxSteps; step++ {
 		val := s.Evaluate(from)
 		if math.Abs(val) < hitEps {
@@ -22,8 +22,8 @@ func fallToSurface(s sdf.SDF2, from sdf.V2, hitEps, normalEps, stepSize float64,
 		}
 		normal := sdf.Normal2(s, from, normalEps)
 		if math.IsNaN(normal.X) && math.IsNaN(normal.Y) { // Decide randomly when the normal can't move us
-			normal.X = rand.Float64()*0.1 - 0.05
-			normal.Y = rand.Float64()*0.1 - 0.05
+			normal.X = rng.Float64()*0.1 - 0.05
+			normal.Y = rng.Float64()*0.1 - 0.05
 		} else if math.IsNaN(normal.X) {
 			normal.X = 0
 			normal.Y = sign(normal.Y)

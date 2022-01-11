@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/Yeicor/surreal/surreal2"
 	"github.com/deadsy/sdfx/render"
 	"github.com/deadsy/sdfx/sdf"
-	"iso-planar-gen/sdf2"
 	"log"
 	"math"
 	"time"
@@ -16,14 +16,14 @@ func main() {
 	s = sdf.ScaleUniform2D(s, 2)
 
 	startTime := time.Now()
-	lines := sdf2.NewIsoPlanarGen2Simple(math.Pi/4, 1e-3, sdf.V2i{1, 1}).Run(s)
+	lines := surreal2.NewSimple(math.Pi/4, 1e-3, sdf.V2i{1, 1}).Run(s)
 	log.Println("Generated", len(lines), "output lines in", time.Since(startTime))
 	if len(lines) != 4 {
 		panic("Squares (low enough step and minAngle) are expected to render using only 4 lines")
 	}
 
 	// Save boilerplate
-	svg := render.NewSVG("output.svg", "fill:none;stroke:black;stroke-width:0.1")
+	svg := render.NewSVG("render.svg", "fill:none;stroke:black;stroke-width:0.1")
 	for _, line := range lines {
 		log.Println("Output line:", line)
 		svg.Line(line[0], line[1])

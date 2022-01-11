@@ -1,5 +1,7 @@
+# Temporary render files
+/examples/**/render.svg
 
 # IDE files
-/iso-planar-gen.iml
+/surreal.iml
 /.idea
 

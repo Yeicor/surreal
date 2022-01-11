@@ -1,4 +1,4 @@
-package sdf2
+package surreal2
 
 import (
 	"fmt"

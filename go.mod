@@ -1,4 +1,4 @@
-module github.com/Yeicor/iso-planar-gen
+module github.com/Yeicor/surreal
 
 go 1.17
 
