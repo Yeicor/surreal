@@ -16,9 +16,12 @@ func main() {
 	//s = sdf.ScaleUniform3D(s, 2)
 
 	startTime := time.Now()
-	alg := surreal3.NewSimple(math.Pi/4, 1e-3, sdf.V3i{1, 1, 1})
+	alg := surreal3.NewSimple(math.Pi/4, 1e-1, sdf.V3i{1, 1, 1})
 	triangles := alg.Run(s)
 	log.Println("Generated", len(triangles), "output triangles in", time.Since(startTime))
+	for _, triangle := range triangles {
+		log.Println("Output triangle:", triangle)
+	}
 
 	// Save boilerplate
 	render.ToSTL(s, -1, "render.stl", alg)
