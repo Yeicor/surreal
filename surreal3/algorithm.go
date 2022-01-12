@@ -111,7 +111,6 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 				log.Println("[SURREAL3] MERGE INFO:", curPos, "->", closestVert, "--", canMerge, "&&",
 					closestVertDistSq, "<", a.step, "&& ...")
 				if canMerge {
-					log.Println("[SURREAL3] MERGE!", curPos, "->", closestVert)
 					// TODO: Generate 2 triangles (if not degenerate), fully connecting both separate triangles with a quad.
 					off := 0
 					for i, other := range *remaining { // Remove from boundaries to process (should be of len() 1)
@@ -121,6 +120,7 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 							//break
 						}
 					}
+					log.Println("[SURREAL3] MERGE!", curPos, "->", closestVert, "removed", off)
 					curPos = closestVert // Perfect close
 				} else { // Mark as new boundary
 					newProc := &toProcess{edge: [2]sdf.V3{start.edge[0], curPos}}
