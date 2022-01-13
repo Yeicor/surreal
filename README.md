@@ -58,7 +58,8 @@ surface (using a tangent) until the tangent at the new position is at an angle g
 new vertex, creating a line (2D) or triangle (3D) and adds to the processing queue the new point (2D) or edges (3D). The
 queue is processed in a loop in the same way. It also detects when we reached the other end of the surface and properly
 closes the surface, finishing the algorithm. To support multiple closed surfaces, a simple voxel sampler with gradient
-descent to find the surface is used
+descent to find the surface is used.
 
-This allows it to create a 4 line square in 12 microseconds and a 12 face cube in 120 microseconds.
+For example, it is capable of creating squares and cubes with the optimal number of lines/faces very fast, no matter the 
+transform applied to them.
 
