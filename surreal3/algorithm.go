@@ -19,9 +19,10 @@ func (a *Algorithm) buildSingleSurface(s sdf.SDF3, firstEdge [2]sdf.V3) ([]*Tria
 		newTriangle := &Triangle{curTriangleEdge.edge[0], curTriangleEdge.edge[1], curTriangleEnd}
 		rtreeTriangles.Insert(newTriangle)
 		res = append(res, newTriangle)
-		log.Println("==== AFTER ITER (triangles:", len(res), "remaining edges:", len(remaining), ") ====")
+		//log.Println("==== AFTER ITER (triangles:", len(res), "remaining edges:", len(remaining), ") ====")
 		i++
-		if i >= 13 {
+		if i >= 250 { // FIXME: Remove this triangle limit when it is safe to do so
+			log.Println("[SURREAL3] WARNING: Face limit hit, stopping generation...")
 			break
 		}
 	}
@@ -105,12 +106,12 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 				}
 			}
 		}
-		//	log.Println("[SURREAL3] Pos:", prevPos, "->", curPos, "Normals:", startNormal, "->", newNormal,
-		//		"Angle:", angle, ">=?", a.minAngle, "foundFirstAngle:", foundFirstAngle)
+		//log.Println("[SURREAL3] Pos:", prevPos, "->", curPos, "Normals:", startNormal, "->", newNormal,
+		//	"Angle:", angle, ">=?", a.minAngle, "foundFirstAngle:", foundFirstAngle)
 		if shouldGenNewVertex { // We need to place a vertex
-			if curPos.Sub(start.edge[0]).Length2() < a.step || math.Abs(start.edge[1].X) < math.MaxFloat64 &&
-				curPos.Sub(start.edge[1]).Length2() < a.step && !foundFirstAngleRev { // Area 0 triangle: look for the second angle in opposite direction
-				log.Println("[SURREAL3] RESET with foundFirstAngleRev = true")
+			if (curPos.Sub(start.edge[0]).Length2() < a.step || math.Abs(start.edge[1].X) < math.MaxFloat64 &&
+				curPos.Sub(start.edge[1]).Length2() < a.step) && !foundFirstAngleRev { // Area 0 triangle: look for the second angle in opposite direction
+				//log.Println("[SURREAL3] RESET with foundFirstAngleRev = true")
 				reset()
 				foundFirstAngleRev = true
 				continue
@@ -120,7 +121,7 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 				closestVert, closestVertDistSq, _ := findNearest(rtreeTriangles, curPos, start.edge, a.numNeighbors)
 				canMerge := closestVertDistSq < a.step
 				//canMerge = canMerge /* && closestVert != start.edge[0] && closestVert != start.edge[1]*/
-				log.Println("[SURREAL3] MERGE INFO:", curPos, "->", closestVert, "--", closestVertDistSq, "<", a.step)
+				//log.Println("[SURREAL3] MERGE INFO:", curPos, "->", closestVert, "--", closestVertDistSq, "<", a.step)
 				blockedEdge0 := false
 				blockedEdge1 := false
 				if canMerge {
@@ -136,25 +137,19 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 							approxEqual(curPos, other.edge[1], a.step) && approxEqual(start.edge[1], other.edge[0], a.step)
 						blockedEdge0 = blockedEdge0 || blockedWithEdge0
 						blockedEdge1 = blockedEdge1 || blockedWithEdge1
-						log.Println(curPos, start.edge, "====?", other.edge, ":", blockedWithEdge0 || blockedWithEdge1)
+						//log.Println(curPos, start.edge, "====?", other.edge, ":", blockedWithEdge0 || blockedWithEdge1)
 						if blockedWithEdge0 || blockedWithEdge1 {
 							*remaining = append((*remaining)[:i], (*remaining)[i+1:]...)
 							removed++
 							i--
 						}
 					}
-					if closestVertDistSq < a.step && removed == 0 { // FIXME: THIS HACK FAILS ON EDGE CASES?
+					if removed == 0 { // FIXME: THIS HACK FAILS ON EDGE CASES?
 						reset()
 						foundFirstAngleRev = true
 						continue
 					}
 					curPos = closestVert // Perfect close
-					//if curPos.Sub(start.edge[0]).Length2() < a.step || math.Abs(start.edge[1].X) < math.MaxFloat64 &&
-					//	curPos.Sub(start.edge[1]).Length2() < a.step { // Area 0 triangle: look for the second angle in opposite direction
-					//	reset()
-					//	foundFirstAngleRev = true
-					//	continue
-					//}
 				} // Otherwise, leave remaining and mark both new edges as boundary
 				//log.Println("[SURREAL3] Adding new edges to process:", !blockedEdge0, !blockedEdge1)
 				if !blockedEdge0 {

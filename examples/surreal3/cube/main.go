@@ -13,7 +13,8 @@ import (
 func main() {
 	s, _ := sdf.Box3D(sdf.V3{X: 1, Y: 1, Z: 1}, 0)
 	// TODO: Apply some transforms to make the problem harder
-	//s = sdf.Transform3D(s, sdf.Translate3d(sdf.V3{X: 4, Y: 1, Z: -4}).Mul(sdf.Rotate3d(sdf.V3{X: 1, Y: 1, Z: 1}, math.Pi/8)))
+	s = sdf.Transform3D(s, sdf.Translate3d(sdf.V3{X: 0.1, Y: 0.144, Z: -0.25234}))
+	//s = sdf.Transform3D(s, sdf.Rotate3d(sdf.V3{X: 1, Y: 1, Z: 1}.Normalize(), math.Pi/32))
 	s = sdf.ScaleUniform3D(s, 2)
 
 	startTime := time.Now()
