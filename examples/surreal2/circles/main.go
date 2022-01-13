@@ -19,7 +19,7 @@ func main() {
 	log.Println("Generated", len(lines), "output lines in", time.Since(startTime))
 
 	// Save boilerplate
-	svg := render.NewSVG("render.svg", "fill:none;stroke:black;stroke-width:0.01")
+	svg := render.NewSVG("render.svg", "fill:none;stroke:black;stroke-width:0.1")
 	for _, line := range lines {
 		//log.Println("Output line:", line)
 		svg.Line(line[0], line[1])
