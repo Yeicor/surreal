@@ -58,7 +58,7 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF2, start *toProcess, remaining *[]
 		if (!firstIter && angle >= a.minAngle) || sharpAngle { // We need to place a vertex
 			if remaining != nil {
 				// Try to merge vertices (closing boundary)
-				closestVert, closestVertDistSq, _ := findNearest(rtreeLines, curPos, start.point, 1)
+				closestVert, closestVertDistSq, _ := findNearest(rtreeLines, curPos, start.point, a.numNeighbors)
 				canMerge := closestVertDistSq < a.step
 				canMerge = canMerge && closestVert != start.point
 				//log.Println("[SURREAL2] MERGE INFO:", curPos, "->", closestVert, "--", canMerge, "&&",

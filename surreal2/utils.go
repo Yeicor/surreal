@@ -12,22 +12,23 @@ func findNearest(rtreeLines *rtreego.Rtree, newPos sdf.V2, from sdf.V2, numNeigh
 	allNearest := rtreeLines.NearestNeighbors(numNeighbors, rtreego.Point{newPos.X, newPos.Y})
 	closestVertDistSq := math.MaxFloat64
 	var closestVert sdf.V2
-	var nearestLine *line
+	var closestLine *line
 	for _, nearest := range allNearest {
-		nearestLine = nearest.(*line)
-		closestVert = nearestLine.vertices[0]
-		closestVertDistSq1 := nearestLine.vertices[0].Sub(newPos).Length2() + nearestLine.vertices[0].Sub(center).Length2()*tieEps
-		closestVertDistSq2 := nearestLine.vertices[1].Sub(newPos).Length2() + nearestLine.vertices[1].Sub(center).Length2()*tieEps
+		sampledLine := nearest.(*line)
+		closestVertDistSq1 := sampledLine.vertices[0].Sub(newPos).Length2() + sampledLine.vertices[0].Sub(center).Length2()*tieEps
+		closestVertDistSq2 := sampledLine.vertices[1].Sub(newPos).Length2() + sampledLine.vertices[1].Sub(center).Length2()*tieEps
 		if closestVertDistSq1 < closestVertDistSq {
 			closestVertDistSq = closestVertDistSq1
-			closestVert = nearestLine.vertices[0]
+			closestVert = sampledLine.vertices[0]
+			closestLine = sampledLine
 		}
 		if closestVertDistSq2 < closestVertDistSq {
 			closestVertDistSq = closestVertDistSq2
-			closestVert = nearestLine.vertices[1]
+			closestVert = sampledLine.vertices[1]
+			closestLine = sampledLine
 		}
 	}
-	return closestVert, closestVertDistSq, nearestLine
+	return closestVert, closestVertDistSq, closestLine
 }
 
 type line struct {

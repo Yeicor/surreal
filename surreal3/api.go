@@ -13,6 +13,7 @@ type Algorithm struct {
 	minAngle, step, normalEps float64
 	scanSurfaceCells          sdf.V3i
 	scanSurfaceDistSq         float64
+	numNeighbors              int
 	surfHitEps, surfStepSize  float64
 	surfMaxSteps              int
 	rng                       *rand.Rand
@@ -28,18 +29,19 @@ func NewDefault() *Algorithm {
 
 // NewSimple values may change at any time. See New.
 func NewSimple(minAngle, step float64, scanSurfaceCells sdf.V3i) *Algorithm {
-	return New(minAngle, step, 1e-12, scanSurfaceCells, 0.1, 1e-12,
+	return New(minAngle, step, 1e-12, scanSurfaceCells, 0.1, 5, 1e-12,
 		1, 100, rand.NewSource(0))
 }
 
 // New see Algorithm.
-func New(minAngle float64, step float64, normalEps float64, scanSurfaceCells sdf.V3i, scanSurfaceDistSq, surfHitEps float64, surfStepSize float64, surfMaxSteps int, randSource rand.Source) *Algorithm {
+func New(minAngle float64, step float64, normalEps float64, scanSurfaceCells sdf.V3i, scanSurfaceDistSq float64, numNeighbors int, surfHitEps float64, surfStepSize float64, surfMaxSteps int, randSource rand.Source) *Algorithm {
 	return &Algorithm{
 		minAngle:          minAngle,
 		step:              step,
 		normalEps:         normalEps,
 		scanSurfaceCells:  scanSurfaceCells,
 		scanSurfaceDistSq: scanSurfaceDistSq,
+		numNeighbors:      numNeighbors,
 		surfHitEps:        surfHitEps,
 		surfStepSize:      surfStepSize,
 		surfMaxSteps:      surfMaxSteps,
@@ -76,8 +78,8 @@ func (a *Algorithm) Run(s sdf.SDF3) []*Triangle {
 				firstPoint = a.walkAlongSurface(s, &toProcess{[2]sdf.V3{firstPoint, noPoint}}, nil, nil)
 				secondPoint := a.walkAlongSurface(s, &toProcess{[2]sdf.V3{firstPoint, noPoint.Neg()}}, nil, nil)
 				// If the found point is not on any previously generated surface...
-				_, closestVertDistSq, _ := findNearest(allTrianglesRtree, firstPoint, [2]sdf.V3{firstPoint, firstPoint}, 2)
-				_, closestVertDistSq2, _ := findNearest(allTrianglesRtree, secondPoint, [2]sdf.V3{secondPoint, secondPoint}, 2)
+				_, closestVertDistSq, _ := findNearest(allTrianglesRtree, firstPoint, [2]sdf.V3{firstPoint, firstPoint}, a.numNeighbors)
+				_, closestVertDistSq2, _ := findNearest(allTrianglesRtree, secondPoint, [2]sdf.V3{secondPoint, secondPoint}, a.numNeighbors)
 				if closestVertDistSq == math.MaxFloat64 || closestVertDistSq > a.scanSurfaceDistSq && closestVertDistSq2 > a.scanSurfaceDistSq {
 					// Build the new surface
 					//log.Println("[SURREAL2] Generating surface at", cellIndex, ">", firstPoint, "with closest", closestVertDistSq)
