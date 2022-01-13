@@ -25,4 +25,8 @@ func main() {
 
 	// Save boilerplate
 	render.ToSTL(s, -1, "render.stl", alg)
+
+	if len(triangles) != 12 {
+		panic("Cubes (low enough step and minAngle) are expected to render using only 12 triangles")
+	}
 }
