@@ -14,13 +14,13 @@ See the [examples folder](examples).
 
 <table>
 <tr>
-<td style="width: 100vh">
+<td>
 Square (26µs, 4 lines)
 
 [![Square example](docs/example_square.png)](docs/example_square.png)
 [![Square example](docs/example_square2.png)](docs/example_square2.png)
 </td>
-<td style="width: 100vh">
+<td>
 Circles (1ms, 37 lines)
 
 [![Circles example](docs/example_circles.png)](docs/example_circles.png)
@@ -40,7 +40,7 @@ Text (985ms, 17 surfaces, 814 lines)
 
 <table>
 <tr>
-<td style="width: 100vh">
+<td>
 Cube (621µs, 12 faces)
 
 [![Cube example](docs/example_cube.png)](docs/example_cube.png)
