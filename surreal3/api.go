@@ -76,8 +76,8 @@ func (a *Algorithm) Run(s sdf.SDF3) []*Triangle {
 				firstPoint = a.walkAlongSurface(s, &toProcess{[2]sdf.V3{firstPoint, noPoint}}, nil, nil)
 				secondPoint := a.walkAlongSurface(s, &toProcess{[2]sdf.V3{firstPoint, noPoint.Neg()}}, nil, nil)
 				// If the found point is not on any previously generated surface...
-				_, closestVertDistSq, _ := findNearest(allTrianglesRtree, firstPoint, 2 /* TODO: more? */)
-				_, closestVertDistSq2, _ := findNearest(allTrianglesRtree, secondPoint, 2 /* TODO: more? */)
+				_, closestVertDistSq, _ := findNearest(allTrianglesRtree, firstPoint, [2]sdf.V3{firstPoint, firstPoint}, 2)
+				_, closestVertDistSq2, _ := findNearest(allTrianglesRtree, secondPoint, [2]sdf.V3{secondPoint, secondPoint}, 2)
 				if closestVertDistSq == math.MaxFloat64 || closestVertDistSq > a.scanSurfaceDistSq && closestVertDistSq2 > a.scanSurfaceDistSq {
 					// Build the new surface
 					//log.Println("[SURREAL2] Generating surface at", cellIndex, ">", firstPoint, "with closest", closestVertDistSq)

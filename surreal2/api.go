@@ -87,7 +87,7 @@ func (a *Algorithm) Run(s sdf.SDF2) [][2]sdf.V2 {
 			// Move this point to an "edge" (optional, may reduce the number of lines by 1 and avoid intersections)
 			firstPoint = a.walkAlongSurface(s, &toProcess{firstPoint, true}, nil, nil)
 			// If the found point is not on any previously generated surface...
-			_, closestVertDistSq, _ := findNearest(allLinesRtree, firstPoint, 2 /* TODO: more? */)
+			_, closestVertDistSq, _ := findNearest(allLinesRtree, firstPoint, firstPoint, 2 /* TODO: more? */)
 			if closestVertDistSq == math.MaxFloat64 || closestVertDistSq > a.scanSurfaceDistSq {
 				// Build the new surface
 				//log.Println("[SURREAL2] Generating surface at", cellIndex, ">", firstPoint, "with closest", closestVertDistSq)

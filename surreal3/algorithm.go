@@ -11,6 +11,7 @@ func (a *Algorithm) buildSingleSurface(s sdf.SDF3, firstEdge [2]sdf.V3) ([]*Tria
 	var res []*Triangle
 	rtreeTriangles := rtreego.NewTree(3, 3, 5)
 	remaining := []*toProcess{{edge: firstEdge}, {edge: [2]sdf.V3{firstEdge[1], firstEdge[0]}}}
+	i := 0
 	for len(remaining) > 0 {
 		curTriangleEdge := remaining[0]
 		remaining = remaining[1:]
@@ -18,6 +19,11 @@ func (a *Algorithm) buildSingleSurface(s sdf.SDF3, firstEdge [2]sdf.V3) ([]*Tria
 		newTriangle := &Triangle{curTriangleEdge.edge[0], curTriangleEdge.edge[1], curTriangleEnd}
 		rtreeTriangles.Insert(newTriangle)
 		res = append(res, newTriangle)
+		log.Println("==== AFTER ITER (triangles:", len(res), "remaining edges:", len(remaining), ") ====")
+		i++
+		if i >= 10 {
+			break
+		}
 	}
 	return res, rtreeTriangles
 }
@@ -33,20 +39,28 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 			tangentCross = tangentCross.Neg()
 		}
 	}
-	startNormal := sdf.Normal3(s, curPos, a.normalEps)
-	startTangent := sdf.V3{X: math.NaN()}
-	moveCross := false
-	for math.IsNaN(startTangent.X) || math.IsNaN(startTangent.Y) || math.IsNaN(startTangent.Z) {
-		if moveCross { // Randomize a little to avoid NaNs
-			tangentCross = tangentCross.Add(sdf.V3{X: a.rng.Float64(), Y: a.rng.Float64(), Z: a.rng.Float64()}.
-				SubScalar(0.5).DivScalar(5)).Normalize()
+	startPos := curPos
+	var startNormal, startTangent sdf.V3
+	var moveCross, foundFirstAngle bool
+	reset := func() {
+		// Reset to initial conditions, but with foundFirstAngleRev set to true
+		startNormal = sdf.Normal3(s, startPos, a.normalEps)
+		startTangent = sdf.V3{X: math.NaN()}
+		moveCross = false
+		for math.IsNaN(startTangent.X) || math.IsNaN(startTangent.Y) || math.IsNaN(startTangent.Z) {
+			if moveCross { // Randomize a little to avoid NaNs
+				tangentCross = tangentCross.Add(sdf.V3{X: a.rng.Float64(), Y: a.rng.Float64(), Z: a.rng.Float64()}.
+					SubScalar(0.5).DivScalar(5)).Normalize()
+			}
+			moveCross = true
+			startTangent = tangentForNormal(startNormal, tangentCross)
 		}
-		moveCross = true
-		startTangent = tangentForNormal(startNormal, tangentCross)
+		foundFirstAngle = false
 	}
+	reset()
 	prevPos := curPos
 	firstIter := true
-	foundFirstAngle := false
+	foundFirstAngleRev := false
 	for {
 		// Move by step to check if we are still good at the new point
 		// TODO: Is it ok to fall outside the bounding box to continue the surface? (or should we force cut the surface
@@ -69,9 +83,9 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 			// (in this case we need a change of direction, as this is a very sharp corner: >= ~90º)
 			movedBy := prevPos.Sub(curPos).Length2()
 			sharpAngle = movedBy < a.step*a.step/1000
-			if sharpAngle {
-				log.Println("[SURREAL3] Found sharp angle (moved by", movedBy, "<", a.step*a.step/1000, "), firstIter:", firstIter)
-			}
+			//if sharpAngle {
+			//	log.Println("[SURREAL3] Found sharp angle (moved by", movedBy, "<", a.step*a.step/1000, "), firstIter:", firstIter)
+			//}
 		}
 		angle := math.Acos(startNormal.Dot(newNormal))
 		shouldGenNewVertex := (!firstIter && angle >= a.minAngle) || sharpAngle
@@ -79,6 +93,9 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 			if !foundFirstAngle {
 				// Follow a second tangent once the first one reaches a valid angle (better vertex positioning)
 				newTangent := startNormal.Cross(newNormal).Normalize()
+				if foundFirstAngleRev {
+					newTangent = newTangent.Neg()
+				}
 				foundFirstAngle = true
 				if !(math.IsNaN(newTangent.X) || math.IsNaN(newTangent.Y) || math.IsNaN(newTangent.Z)) {
 					startTangent = newTangent
@@ -91,42 +108,59 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 		//	log.Println("[SURREAL3] Pos:", prevPos, "->", curPos, "Normals:", startNormal, "->", newNormal,
 		//		"Angle:", angle, ">=?", a.minAngle, "foundFirstAngle:", foundFirstAngle)
 		if shouldGenNewVertex { // We need to place a vertex
+			if curPos.Sub(start.edge[0]).Length2() < a.step || math.Abs(start.edge[1].X) < math.MaxFloat64 &&
+				curPos.Sub(start.edge[1]).Length2() < a.step { // Area 0 triangle: look for the second angle in opposite direction
+				log.Println("RESET with foundFirstAngleRev = true")
+				reset()
+				foundFirstAngleRev = true
+				continue
+			}
 			if remaining != nil {
 				// Try to merge vertices (closing boundary)
-				// FIXME: Proper merge generating more triangles and removing merged edge
-				closestVert, closestVertDistSq, nearestTriangle := findNearest(rtreeTriangles, curPos, 3)
+				closestVert, closestVertDistSq, closestTriangle := findNearest(rtreeTriangles, curPos, start.edge, 1)
 				canMerge := closestVertDistSq < a.step
-				if canMerge {
-					// Override the closest vert to the one that is closest to our start! (if they share the closest triangle, edge case)
-					closestVertStart, _, nearestTriangleStart := findNearest(rtreeTriangles, start.edge[0], 2) // Skips start itself
-					if nearestTriangleStart == nearestTriangle {
-						closestVert = closestVertStart
-					}
-					closestVertStart, _, nearestTriangleStart = findNearest(rtreeTriangles, start.edge[1], 2) // Skips start itself
-					if nearestTriangleStart == nearestTriangle {
-						closestVert = closestVertStart
-					}
-				}
 				//canMerge = canMerge /* && closestVert != start.edge[0] && closestVert != start.edge[1]*/
-				log.Println("[SURREAL3] MERGE INFO:", curPos, "->", closestVert, "--", canMerge, "&&",
-					closestVertDistSq, "<", a.step, "&& ...")
+				log.Println("[SURREAL3] MERGE INFO:", curPos, "->", closestVert, "--", closestVertDistSq, "<", a.step,
+					" (closest triangle:", closestTriangle, ")")
+				blockedEdge0 := false
+				blockedEdge1 := false
 				if canMerge {
-					// TODO: Generate 2 triangles (if not degenerate), fully connecting both separate triangles with a quad.
+					curPos = closestVert // Perfect close
+					if curPos.Sub(start.edge[0]).Length2() < a.step || math.Abs(start.edge[1].X) < math.MaxFloat64 &&
+						curPos.Sub(start.edge[1]).Length2() < a.step { // Area 0 triangle: look for the second angle in opposite direction
+						reset()
+						foundFirstAngleRev = true
+						continue
+					}
 					off := 0
-					for i, other := range *remaining { // Remove from boundaries to process (should be of len() 1)
-						if other.edge[0] == closestVert || other.edge[1] == closestVert {
+					// Remove ALL matching edges from remaining
+					for i := 0; i < len(*remaining); i++ {
+						other := (*remaining)[i-off]
+						// TODO: Colinear instead of approxEqual? (complex model repair, and hopefully not needed due to
+						//  stable vertex positioning and merging system)
+						blockedWithEdge0 := approxEqual(curPos, other.edge[0], a.surfHitEps) && approxEqual(start.edge[0], other.edge[1], a.surfHitEps) ||
+							approxEqual(curPos, other.edge[1], a.surfHitEps) && approxEqual(start.edge[0], other.edge[0], a.surfHitEps)
+						blockedWithEdge1 := approxEqual(curPos, other.edge[0], a.surfHitEps) && approxEqual(start.edge[1], other.edge[1], a.surfHitEps) ||
+							approxEqual(curPos, other.edge[1], a.surfHitEps) && approxEqual(start.edge[1], other.edge[0], a.surfHitEps)
+						blockedEdge0 = blockedEdge0 || blockedWithEdge0
+						blockedEdge1 = blockedEdge1 || blockedWithEdge1
+						log.Println(curPos, start.edge, "====?", other.edge, ":", blockedWithEdge0 || blockedWithEdge1)
+						if blockedWithEdge0 || blockedWithEdge1 {
 							*remaining = append((*remaining)[:i-off], (*remaining)[i-off+1:]...)
 							off++
-							//break
 						}
 					}
-					log.Println("[SURREAL3] MERGE!", curPos, "->", closestVert, "removed", off)
-					curPos = closestVert // Perfect close
-				} else { // Mark as new boundary
+					log.Println("Removed", off, "edges from *remaining while merging")
+				} // Otherwise, leave remaining and mark both new edges as boundary
+				log.Println("Adding new triangles:", !blockedEdge0, !blockedEdge1)
+				if !blockedEdge0 {
 					newProc := &toProcess{edge: [2]sdf.V3{start.edge[0], curPos}}
-					*remaining = append(*remaining, newProc)
-					newProc = &toProcess{edge: [2]sdf.V3{curPos, start.edge[1]}}
-					*remaining = append(*remaining, newProc)
+					*remaining = append([]*toProcess{newProc}, *remaining...) // TODO: avoid forcing as first (performance)
+				}
+				if !blockedEdge1 {
+					newProc := &toProcess{edge: [2]sdf.V3{curPos, start.edge[1]}}
+					*remaining = append([]*toProcess{newProc}, *remaining...) // TODO: avoid forcing as first (performance)
+					//*remaining = append(*remaining, newProc)
 				}
 			}
 			//log.Println("[SURREAL3] walkAlongSurface finished with result:", curPos)
@@ -134,4 +168,8 @@ func (a *Algorithm) walkAlongSurface(s sdf.SDF3, start *toProcess, remaining *[]
 		} // Otherwise, continue moving forward without generating a vertex yet
 		firstIter = false
 	}
+}
+
+func approxEqual(val0, val1 sdf.V3, eps float64) bool {
+	return val0.Sub(val1).Length2() < eps
 }

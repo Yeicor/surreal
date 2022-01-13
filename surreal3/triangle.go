@@ -29,3 +29,8 @@ func (t *Triangle) Normal() sdf.V3 {
 	e2 := t[2].Sub(t[0])
 	return e1.Cross(e2).Normalize()
 }
+
+// Center returns the center point of the 3D Triangle.
+func (t *Triangle) Center() sdf.V3 {
+	return t[0].Add(t[1]).Add(t[2]).DivScalar(3)
+}
